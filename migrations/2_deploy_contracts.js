@@ -11,9 +11,9 @@ module.exports = function(deployer) {
                 .then(() => {
                     let config = {
                         localhost: {
-                            url: 'http://localhost:8545',
+                            url: 'http://localhost:7545',
                             dataAddress: FlightSuretyData.address,
-                            appAddress: FlightSuretyApp.address
+                            appAddress: FlightSuretyApp.address 
                         }
                     }
                     fs.writeFileSync(__dirname + '/../src/dapp/config.json',JSON.stringify(config, null, '\t'), 'utf-8');
