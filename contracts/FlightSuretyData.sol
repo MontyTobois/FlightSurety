@@ -12,6 +12,39 @@ contract FlightSuretyData {
   address private contractOwner; // Account used to deploy contract
   bool private operational = true; // Blocks all state changes throughout the contract if false
 
+  // Airlines
+  struct Airline {
+    uint256 funds;
+    bool isFunded;
+    bool isRegistered;
+  }
+
+  uint256 registeredAirlineCount = 0;
+  uint256 fundedAirlineCount = 0;
+  mapping(address => Airline) private airlines;
+
+  // Flights
+  struct Flight {
+    bool isRegistered;
+    bytes32 flightKey;
+    address Airline;
+    string flightNumber;
+    uint8 statusCode;
+    uint256 timeStamp;
+    string depatureLocation;
+    string arrivalLocation;
+  }
+  mapping(bytes32 => Flight) public flights;
+  bytes32[] public registeredFlights;
+
+  // Insurance Claims
+  struct InsuranceClaim {
+    address passenger;
+    uint256 purchaseAmount;
+    uint256 payoutPercentage;
+    bool credited;
+  }
+
   /********************************************************************************************/
   /*                                       EVENT DEFINITIONS                                  */
   /********************************************************************************************/
