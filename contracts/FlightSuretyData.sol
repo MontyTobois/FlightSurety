@@ -45,7 +45,9 @@ contract FlightSuretyData {
     bool credited;
   }
 
-  
+  mapping(bytes32 => InsuranceClaim[]) public flightInsuranceCliams;
+
+  mapping(address => uint256) public returnedFunds;
 
   /********************************************************************************************/
   /*                                       EVENT DEFINITIONS                                  */
@@ -121,6 +123,14 @@ contract FlightSuretyData {
   modifier requireFlightIsRegistered(bytes32 flightKey) {
     require(flights[flightKey].isRegistered, "Flight is not registered");
     _;
+  }
+
+  modifier requireInsuranceNotCredited(address passenger) {
+    require(!flightInsuranceCliams[purchaseAmount].credited, "Refund was credited for ticket");
+  }
+
+  modifier requireInsuranceCredited(address passenger) {
+    require(flightInsuranceCliams[purchaseAmount].credited, "Refund has not been credited for ticket");
   }
 
   /********************************************************************************************/
