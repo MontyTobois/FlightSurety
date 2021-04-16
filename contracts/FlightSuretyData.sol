@@ -35,23 +35,20 @@ contract FlightSuretyData {
     string arrivalLocation;
   }
   mapping(bytes32 => Flight) public flights;
-  bytes32[] public registeredFlights = 0;
+  bytes32[] public registeredFlights;
 
   // Insurance Claims
   struct InsuranceClaim {
     address passenger;
+    bytes32 insuranceKey;
     uint256 purchaseAmount;
     uint256 payoutPercent;
-    bool credited;
+    bool isCredited;
   }
 
-  mapping(bytes32 => InsuranceClaim[]) public flightInsuranceCliams;
+  mapping(bytes32 => InsuranceClaim) public flightInsuranceCliams;
 
   mapping(address => uint256) public returnedFunds;
-
-  /********************************************************************************************/
-  /*                                       EVENT DEFINITIONS                                  */
-  /********************************************************************************************/
 
   /**
    * @dev Constructor
@@ -62,10 +59,13 @@ contract FlightSuretyData {
     airlines[airlineAddress] = Airline(true, false, 0);
   }
 
+  /********************************************************************************************/
+  /*                                       EVENT DEFINITIONS                                  */
+  /********************************************************************************************/
+
   event AirlineRegistered(address airline);
   event AirlineFunded(address airline);
-  event FlightRegitered(bytes32 flightkeys);
-
+  event FlightRegistered(bytes32 flightkeys);
 
   /********************************************************************************************/
   /*                                       FUNCTION MODIFIERS                                 */
@@ -125,12 +125,20 @@ contract FlightSuretyData {
     _;
   }
 
-  modifier requireInsuranceNotCredited(address passenger) {
-    require(!flightInsuranceCliams[purchaseAmount].credited, "Refund was credited for ticket");
+  modifier requireInsuranceNotCredited(bytes32 insuranceKey) {
+    require(
+      !flightInsuranceCliams[insuranceKey].isCredited,
+      "Refund was credited for ticket"
+    );
+    _;
   }
 
-  modifier requireInsuranceCredited(address passenger) {
-    require(flightInsuranceCliams[purchaseAmount].credited, "Refund has not been credited for ticket");
+  modifier requireInsuranceCredited(bytes32 insuranceKey) {
+    require(
+      flightInsuranceCliams[insuranceKey].isCredited,
+      "Refund has not been credited for ticket"
+    );
+    _;
   }
 
   /********************************************************************************************/
@@ -176,16 +184,31 @@ contract FlightSuretyData {
     return flights[flightKey].isRegistered;
   }
 
-  function getRegisteredAirlineCount () public view requireIsOperational returns(uint256) {
+  function getRegisteredAirlineCount()
+    public
+    view
+    requireIsOperational
+    returns (uint256)
+  {
     return registeredAirlineCount;
   }
 
-  function getFundedAirlineCount () public view requireIsOperational returns(uint256) {
+  function getFundedAirlineCount()
+    public
+    view
+    requireIsOperational
+    returns (uint256)
+  {
     return fundedAirlineCount;
   }
 
-  function getRegisteredFlightCount () public view requireIsOperational returns(bytes32) {
-    returns registeredFlights;
+  function getRegisteredFlightCount()
+    public
+    view
+    requireIsOperational
+    returns (uint256)
+  {
+    return registeredFlights.length;
   }
 
   /**
@@ -193,10 +216,43 @@ contract FlightSuretyData {
    *      Can only be called from FlightSuretyApp contract
    *
    */
-  function registerAirline(address newAirline address registeringAirline) external requireIsOperational requireAirlineIsNotRegistered(newAirline) requireAirlineIsFunded(registeringAirline){
+  function registerAirline(address newAirline, address registeringAirline)
+    external
+    requireIsOperational
+    requireAirlineIsNotRegistered(newAirline)
+    requireAirlineIsFunded(registeringAirline)
+  {
     airlines[newAirline] = Airline(true, false, 0);
-    regiesteredAirlineCount = registeredAirlineCount.add(1);
+    registeredAirlineCount = registeredAirlineCount.add(1);
     emit AirlineRegistered(newAirline);
+  }
+
+  function registerFlight(
+    bytes32 flightKey,
+    uint256 timestamp,
+    address airline,
+    string memory flightNumber,
+    string memory departureLocation,
+    string memory arrivalLocation
+  )
+    public
+    payable
+    requireIsOperational
+    requireAirlineIsFunded(airline)
+    requireFlightIsNotRegistered(flightKey)
+  {
+    flights[flightKey] = Flight(
+      true,
+      flightKey,
+      airline,
+      flightNumber,
+      0,
+      timestamp,
+      departureLocation,
+      arrivalLocation
+    );
+    registeredFlights.push(flightKey);
+    emit FlightRegistered(flightKey);
   }
 
   /**
