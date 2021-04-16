@@ -35,15 +35,17 @@ contract FlightSuretyData {
     string arrivalLocation;
   }
   mapping(bytes32 => Flight) public flights;
-  bytes32[] public registeredFlights;
+  bytes32[] public registeredFlights = 0;
 
   // Insurance Claims
   struct InsuranceClaim {
     address passenger;
     uint256 purchaseAmount;
-    uint256 payoutPercentage;
+    uint256 payoutPercent;
     bool credited;
   }
+
+  
 
   /********************************************************************************************/
   /*                                       EVENT DEFINITIONS                                  */
@@ -60,7 +62,7 @@ contract FlightSuretyData {
 
   event AirlineRegistered(address airline);
   event AirlineFunded(address airline);
-  event FlightRegitered(bytes32 flightkey);
+  event FlightRegitered(bytes32 flightkeys);
 
 
   /********************************************************************************************/
@@ -162,6 +164,18 @@ contract FlightSuretyData {
 
   function isFlightRegistered(bytes32 flightKey) public view returns (bool) {
     return flights[flightKey].isRegistered;
+  }
+
+  function getRegisteredAirlineCount () public view requireIsOperational returns(uint256) {
+    return registeredAirlineCount;
+  }
+
+  function getFundedAirlineCount () public view requireIsOperational returns(uint256) {
+    return fundedAirlineCount;
+  }
+
+  function getRegisteredFlightCount () public view requireIsOperational returns(bytes32) {
+    returns registeredFlights;
   }
 
   /**
