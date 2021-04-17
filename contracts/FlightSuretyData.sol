@@ -46,17 +46,19 @@ contract FlightSuretyData {
     bool isCredited;
   }
 
+  // Flight Insurance Claims
   mapping(bytes32 => InsuranceClaim) public flightInsuranceCliams;
 
+  // Passenger Insurance Claims
   mapping(address => uint256) public returnedFunds;
 
   /**
    * @dev Constructor
    *      The deploying account becomes contractOwner
    */
-  constructor() public {
+  constructor(address airlineAddress) public {
     contractOwner = msg.sender;
-    airlines[airlineAddress] = Airline(true, false, 0);
+    airlines[airlineAddress] = Airline(0, true, false);
   }
 
   /********************************************************************************************/
@@ -66,6 +68,7 @@ contract FlightSuretyData {
   event AirlineRegistered(address airline);
   event AirlineFunded(address airline);
   event FlightRegistered(bytes32 flightkeys);
+  event ProcessedFlightStatus(bytes32 flightKey, uint8 statusCode);
 
   /********************************************************************************************/
   /*                                       FUNCTION MODIFIERS                                 */
@@ -93,38 +96,56 @@ contract FlightSuretyData {
   }
 
   /**
-   * @dev Modifier that requires an Airplane is not registered yet
+   * @dev Modifier that requires an Airline is not registered yet
    */
   modifier requireAirlineIsNotRegistered(address airline) {
     require(!airlines[airline].isRegistered, "Airline is already registered");
     _;
   }
 
+  /**
+   * @dev Modifier that requires an Airline is not funded yet
+   */
   modifier requireAirlineIsNotFunded(address airline) {
     require(!airlines[airline].isFunded, "Airline is already funded");
     _;
   }
 
+  /**
+   * @dev Modifier that checks Flight is not registered yet
+   */
   modifier requireFlightIsNotRegistered(bytes32 flightKey) {
     require(!flights[flightKey].isRegistered, "Flight is already registered");
     _;
   }
 
+  /**
+   * @dev Modifier that checks if Airline is registered yet
+   */
   modifier requireAirlineIsRegistered(address airline) {
     require(airlines[airline].isRegistered, "Airline is not registered");
     _;
   }
 
+  /**
+   * @dev Modifier that checks if Airline is funded yet
+   */
   modifier requireAirlineIsFunded(address airline) {
     require(airlines[airline].isFunded, "Airline is not funded");
     _;
   }
 
+  /**
+   * @dev Modifier that checks if Flight is registered yet
+   */
   modifier requireFlightIsRegistered(bytes32 flightKey) {
     require(flights[flightKey].isRegistered, "Flight is not registered");
     _;
   }
 
+  /**
+   * @dev Modifier that checks if Insurance was not credited yet
+   */
   modifier requireInsuranceNotCredited(bytes32 insuranceKey) {
     require(
       !flightInsuranceCliams[insuranceKey].isCredited,
@@ -133,6 +154,9 @@ contract FlightSuretyData {
     _;
   }
 
+  /**
+   * @dev Modifier that checks if Insurance was credited yet
+   */
   modifier requireInsuranceCredited(bytes32 insuranceKey) {
     require(
       flightInsuranceCliams[insuranceKey].isCredited,
@@ -166,7 +190,10 @@ contract FlightSuretyData {
   /********************************************************************************************/
   /*                                     SMART CONTRACT FUNCTIONS                             */
   /********************************************************************************************/
-
+  /**
+   * @dev Checks if airline is registered
+   * returns (true/false)
+   */
   function isAirlineRegistered(address airline)
     public
     view
@@ -176,14 +203,37 @@ contract FlightSuretyData {
     return airlines[airline].isRegistered;
   }
 
+  /**
+   * @dev Checks if airline is funded
+   * returns (true/false)
+   */
   function isAirlineFunded(address airline) public view returns (bool) {
     return airlines[airline].isFunded;
   }
 
+  /**
+   * @dev Checks if flight is registered
+   * returns (true/false)
+   */
   function isFlightRegistered(bytes32 flightKey) public view returns (bool) {
     return flights[flightKey].isRegistered;
   }
 
+  /**
+   * @dev Checks if airline is funded
+   * returns (true/false)
+   */
+  function isFlightLanded(bytes32 flightKey) public view returns (bool) {
+    if (flights[flightKey].statusCode > 0) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * @dev Gets the number of airlines already registered
+   * returns number of registered airlines
+   */
   function getRegisteredAirlineCount()
     public
     view
@@ -193,6 +243,10 @@ contract FlightSuretyData {
     return registeredAirlineCount;
   }
 
+  /**
+   * @dev Gets the number of airlines already funded
+   * returns number of funded airlines
+   */
   function getFundedAirlineCount()
     public
     view
@@ -202,6 +256,10 @@ contract FlightSuretyData {
     return fundedAirlineCount;
   }
 
+  /**
+   * @dev Gets the number of flights already registered
+   * returns number of registered flights
+   */
   function getRegisteredFlightCount()
     public
     view
@@ -222,7 +280,7 @@ contract FlightSuretyData {
     requireAirlineIsNotRegistered(newAirline)
     requireAirlineIsFunded(registeringAirline)
   {
-    airlines[newAirline] = Airline(true, false, 0);
+    airlines[newAirline] = Airline(0, true, false);
     registeredAirlineCount = registeredAirlineCount.add(1);
     emit AirlineRegistered(newAirline);
   }
@@ -253,6 +311,24 @@ contract FlightSuretyData {
     );
     registeredFlights.push(flightKey);
     emit FlightRegistered(flightKey);
+  }
+
+  /**
+   * @dev Determines the status for flight
+   * returns status code for flight
+   */
+  function processFlightStatus(
+    address airline,
+    string calldata flight,
+    uint256 timestamp,
+    uint8 statusCode
+  ) external requireIsOperational {
+    bytes32 flightKey = getFlightKey(airline, flight, timestamp);
+    require(!isFlightLanded(flightKey), "Flight has landed already.");
+    if (flights[flightKey].statusCode == 0) {
+      flights[flightKey].statusCode = statusCode;
+    }
+    emit ProcessedFlightStatus(flightKey, statusCode);
   }
 
   /**
