@@ -40,14 +40,14 @@ contract FlightSuretyData {
   // Insurance Claims
   struct InsuranceClaim {
     address passenger;
-    bytes32 insuranceKey;
     uint256 purchaseAmount;
     uint256 payoutPercent;
     bool isCredited;
+    // bytes32 insuranceKey;
   }
 
   // Flight Insurance Claims
-  mapping(bytes32 => InsuranceClaim) public flightInsuranceCliams;
+  mapping(bytes32 => InsuranceClaim[]) public flightInsuranceCliams;
 
   // Passenger Insurance Claims
   mapping(address => uint256) public returnedFunds;
@@ -69,6 +69,12 @@ contract FlightSuretyData {
   event AirlineFunded(address airline);
   event FlightRegistered(bytes32 flightkeys);
   event ProcessedFlightStatus(bytes32 flightKey, uint8 statusCode);
+  event PassengerInsured(
+    bytes32 flightKey,
+    address passenger,
+    uint256 amount,
+    uint256 payout
+  );
 
   /********************************************************************************************/
   /*                                       FUNCTION MODIFIERS                                 */
@@ -146,24 +152,24 @@ contract FlightSuretyData {
   /**
    * @dev Modifier that checks if Insurance was not credited yet
    */
-  modifier requireInsuranceNotCredited(bytes32 insuranceKey) {
-    require(
-      !flightInsuranceCliams[insuranceKey].isCredited,
-      "Refund was credited for ticket"
-    );
-    _;
-  }
+  // modifier requireInsuranceNotCredited(bytes32 flightKey) {
+  //   require(
+  //     !flightInsuranceCliams[flightKey].isCredited,
+  //     "Refund was credited for ticket"
+  //   );
+  //   _;
+  // }
 
-  /**
-   * @dev Modifier that checks if Insurance was credited yet
-   */
-  modifier requireInsuranceCredited(bytes32 insuranceKey) {
-    require(
-      flightInsuranceCliams[insuranceKey].isCredited,
-      "Refund has not been credited for ticket"
-    );
-    _;
-  }
+  // /**
+  //  * @dev Modifier that checks if Insurance was credited yet
+  //  */
+  // modifier requireInsuranceCredited(bytes32 insuranceKey) {
+  //   require(
+  //     flightInsuranceCliams[insuranceKey].isCredited,
+  //     "Refund has not been credited for ticket"
+  //   );
+  //   _;
+  // }
 
   /********************************************************************************************/
   /*                                       UTILITY FUNCTIONS                                  */
@@ -335,7 +341,20 @@ contract FlightSuretyData {
    * @dev Buy insurance for a flight
    *
    */
-  function buy() external payable {}
+  function buy(
+    bytes32 flightKey,
+    address passenger,
+    uint256 amount,
+    uint256 payout
+  ) external payable requireIsOperational {
+    require(isFlightRegistered(flightKey), "Flight is already registered");
+    require(!isFlightLanded(flightKey), "Flight has already landed");
+
+    flightInsuranceCliams[flightKey].push(
+      InsuranceClaim(passenger, amount, payout, false)
+    );
+    emit PassengerInsured(flightKey, passenger, amount, payout);
+  }
 
   /**
    *  @dev Credits payouts to insurees
@@ -353,7 +372,19 @@ contract FlightSuretyData {
    *      resulting in insurance payouts, the contract should be self-sustaining
    *
    */
-  function fund() public payable {}
+  function fund(address airline, uint256 amount)
+    external
+    requireIsOperational
+    requireAirlineIsRegistered(airline)
+    requireAirlineIsNotFunded(airline)
+    returns (bool)
+  {
+    airlines[airline].isFunded = true;
+    airlines[airline].funds = airlines[airline].funds.add(amount);
+    fundedAirlineCount = fundedAirlineCount.add(1);
+    emit AirlineFunded(airline);
+    return airlines[airline].isFunded;
+  }
 
   function getFlightKey(
     address airline,
@@ -367,7 +398,7 @@ contract FlightSuretyData {
    * @dev Fallback function for funding smart contract.
    *
    */
-  function() external payable {
-    fund();
-  }
+  // function() external payable {
+  //   fund();
+  // }
 }
