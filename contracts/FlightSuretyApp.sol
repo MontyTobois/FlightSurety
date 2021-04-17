@@ -72,6 +72,69 @@ contract FlightSuretyApp {
     _;
   }
 
+  /**
+   * @dev Modifier that requires an Airline is not registered yet
+   */
+  modifier requireAirlineIsNotRegistered(address airline) {
+    require(
+      !flightSuretyData.isAirlineRegistered(airline),
+      "Airline is already registered"
+    );
+    _;
+  }
+
+  /**
+   * @dev Modifier that requires an Airline is not funded yet
+   */
+  modifier requireAirlineIsNotFunded(address airline) {
+    require(
+      !flightSuretyData.isAirlineFunded(airline),
+      "Airline is already funded"
+    );
+    _;
+  }
+
+  /**
+   * @dev Modifier that checks Flight is not registered yet
+   */
+  modifier requireFlightIsNotRegistered(bytes32 flightKey) {
+    require(
+      !flightSuretyData.isFlightRegistered(flightKey),
+      "Flight is already registered"
+    );
+    _;
+  }
+
+  /**
+   * @dev Modifier that requires an Airline is registered
+   */
+  modifier requireAirlineIsRegistered(address airline) {
+    require(
+      flightSuretyData.isAirlineRegistered(airline),
+      "Airline is not registered"
+    );
+    _;
+  }
+
+  /**
+   * @dev Modifier that requires an Airline to be funded
+   */
+  modifier requireAirlineIsFunded(address airline) {
+    require(flightSuretyData.isAirlineFunded(airline), "Airline is not funded");
+    _;
+  }
+
+  /**
+   * @dev Modifier that requires a Flight is registered
+   */
+  modifier requireFlightIsRegistered(bytes32 flightKey) {
+    require(
+      flightSuretyData.isFlightRegistered(flightKey),
+      "Flight is not registered"
+    );
+    _;
+  }
+
   /********************************************************************************************/
   /*                                       CONSTRUCTOR                                        */
   /********************************************************************************************/
