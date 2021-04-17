@@ -26,13 +26,25 @@ contract FlightSuretyApp {
 
   address private contractOwner; // Account used to deploy contract
 
-  struct Flight {
+  // FlightSurety Data Contract
+  FlightSuretyData flightSuretyData;
+
+  bool private operational = true;
+
+  uint256 AIRLINE_REGISTRATION_FEE = 10 ether;
+  uint256 MAX_INSURANCE_VALUE = 1 ether;
+  uint256 INSURANCE_PAYOUT = 150;
+
+  uint256 MULTI_CALL_AIRLINE_VOTING_THRESHOLD = 4;
+  uint256 AIRLINE_REGISTRATION_REQUIURED_VOTES = 2;
+
+  // Pending Airlines
+  struct pendingAirline {
     bool isRegistered;
-    uint8 statusCode;
-    uint256 updatedTimestamp;
-    address airline;
+    bool isFunded;
   }
-  mapping(bytes32 => Flight) private flights;
+
+  mapping(address => address[]) public pendingAirlines;
 
   /********************************************************************************************/
   /*                                       FUNCTION MODIFIERS                                 */
@@ -68,8 +80,9 @@ contract FlightSuretyApp {
    * @dev Contract constructor
    *
    */
-  constructor() public {
+  constructor(address payable dataContract) public {
     contractOwner = msg.sender;
+    flightSuretyData = FlightSuretyData(dataContract);
   }
 
   /********************************************************************************************/
