@@ -31,10 +31,16 @@ contract FlightSuretyApp {
 
   bool private operational = true;
 
+  // Airline can be registered with a fee of 10 ether being submitted
   uint256 AIRLINE_REGISTRATION_FEE = 10 ether;
-  uint256 MAX_INSURANCE_VALUE = 1 ether;
-  uint256 INSURANCE_PAYOUT = 150;
 
+  // Passenger may spend up to 1 ether to purchase flight insurance
+  uint256 MAX_INSURANCE_VALUE = 1 ether;
+
+  // Insurance multipler in percentage
+  uint256 INSURANCE_PAYOUT = 150; // 150%
+
+  // Registration of fifth and subsequent airlines requires mutli-party consensus of 50% registered airlines 
   uint256 MULTI_CALL_AIRLINE_VOTING_THRESHOLD = 4;
   uint256 AIRLINE_REGISTRATION_REQUIURED_VOTES = 2;
 
@@ -152,9 +158,11 @@ contract FlightSuretyApp {
   /*                                       UTILITY FUNCTIONS                                  */
   /********************************************************************************************/
 
-  function isOperational() public pure returns (bool) {
-    return true; // Modify to call data contract's status
+  function isOperational() public view requireContractOwner returns (bool) {
+    return operational; // Modify to call data contract's status
   }
+
+  
 
   /********************************************************************************************/
   /*                                     SMART CONTRACT FUNCTIONS                             */
@@ -164,11 +172,28 @@ contract FlightSuretyApp {
    * @dev Add an airline to the registration queue
    *
    */
-  function registerAirline()
+  function registerAirline(address airline)
     external
-    pure
-    returns (bool success, uint256 votes)
+    requireIsOperational
+    requireAirlineIsNotRegistered(airline)
+    requireAirlineIsFunded(msg.sender)
+    returns (bool success, uint256 votes, uint256 registerAirlineCount);
   {
+
+  /**
+   *  Only existing airline may register a new airline until four airlines regiesterd.
+   *  Airline may participate once 10 ether have been funded
+   */
+    if (flightSuretyData.getRegisteredAirlineCount() <= MULTI_CALL_AIRLINE_VOTING_THRESHOLD) {
+      flightSuretyData.registerAirline(airline, msg.sender);
+      return(success, 0, flightSuretyData.getRegisteredAirlineCount());
+    } else {
+      
+      
+
+
+      
+    }
     return (success, 0);
   }
 
