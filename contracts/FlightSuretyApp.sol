@@ -26,9 +26,6 @@ contract FlightSuretyApp {
 
   address private contractOwner; // Account used to deploy contract
 
-  // FlightSurety Data Contract
-  FlightSuretyData flightSuretyData;
-
   bool private operational = true;
 
   // Airline can be registered with a fee of 10 ether being submitted
@@ -40,7 +37,7 @@ contract FlightSuretyApp {
   // Insurance multipler in percentage
   uint256 INSURANCE_PAYOUT = 150; // 150%
 
-  // Registration of fifth and subsequent airlines requires mutli-party consensus of 50% registered airlines 
+  // Registration of fifth and subsequent airlines requires mutli-party consensus of 50% registered airlines
   uint256 MULTI_CALL_AIRLINE_VOTING_THRESHOLD = 4;
   uint256 AIRLINE_REGISTRATION_REQUIURED_VOTES = 2;
 
@@ -51,6 +48,9 @@ contract FlightSuretyApp {
   }
 
   mapping(address => address[]) public pendingAirlines;
+
+  // FlightSurety Data Contract
+  FlightSuretyData flightSuretyData;
 
   /********************************************************************************************/
   /*                                       FUNCTION MODIFIERS                                 */
@@ -149,9 +149,9 @@ contract FlightSuretyApp {
    * @dev Contract constructor
    *
    */
-  constructor(address payable dataContract) public {
+  constructor(address payable contractData) public {
     contractOwner = msg.sender;
-    flightSuretyData = FlightSuretyData(dataContract);
+    flightSuretyData = FlightSuretyData(contractData);
   }
 
   /********************************************************************************************/
@@ -161,8 +161,6 @@ contract FlightSuretyApp {
   function isOperational() public view requireContractOwner returns (bool) {
     return operational; // Modify to call data contract's status
   }
-
-  
 
   /********************************************************************************************/
   /*                                     SMART CONTRACT FUNCTIONS                             */
@@ -175,26 +173,55 @@ contract FlightSuretyApp {
   function registerAirline(address airline)
     external
     requireIsOperational
-    requireAirlineIsNotRegistered(airline)
-    requireAirlineIsFunded(msg.sender)
-    returns (bool success, uint256 votes, uint256 registerAirlineCount);
+    requireAirlineIsNotRegistered(airline) // Airline is not registered yet
+    requireAirlineIsFunded(msg.sender) // Voter is a funded airline
+    returns (
+      bool success,
+      uint256 votes,
+      uint256 registeredAirlineCount
+    )
   {
-
-  /**
-   *  Only existing airline may register a new airline until four airlines regiesterd.
-   *  Airline may participate once 10 ether have been funded
-   */
-    if (flightSuretyData.getRegisteredAirlineCount() <= MULTI_CALL_AIRLINE_VOTING_THRESHOLD) {
+    // If less than required minimum airlines for voting process
+    if (
+      flightSuretyData.getRegisteredAirlineCount() <=
+      MULTI_CALL_AIRLINE_VOTING_THRESHOLD
+    ) {
       flightSuretyData.registerAirline(airline, msg.sender);
-      return(success, 0, flightSuretyData.getRegisteredAirlineCount());
+      return (success, 0, flightSuretyData.getRegisteredAirlineCount());
     } else {
-      
-      
-
-
-      
+      // Check for duplicates
+      bool doubleVote = false;
+      for (uint256 i = 0; i < pendingAirlines[airline].length; i++) {
+        if (pendingAirlines[airline][i] == msg.sender) {
+          doubleVote = true;
+          break;
+        }
+      }
+      require(
+        !doubleVote,
+        "Duplicate vote, you cannot vote for the same airline twice."
+      );
+      pendingAirlines[airline].push(msg.sender);
+      // Check if enough votes to register airline
+      if (
+        pendingAirlines[airline].length >=
+        flightSuretyData.getRegisteredAirlineCount().div(
+          AIRLINE_REGISTRATION_REQUIURED_VOTES
+        )
+      ) {
+        flightSuretyData.registerAirline(airline, msg.sender);
+        return (
+          true,
+          pendingAirlines[airline].length,
+          flightSuretyData.getRegisteredAirlineCount()
+        );
+      }
+      return (
+        false,
+        pendingAirlines[airline].length,
+        flightSuretyData.getRegisteredAirlineCount()
+      );
     }
-    return (success, 0);
   }
 
   /**
@@ -391,4 +418,69 @@ contract FlightSuretyApp {
   }
 
   // endregion
+}
+
+contract FlightSuretyData {
+  function isOperational() public view returns (bool);
+
+  function setOperatingStatus(bool mode) external;
+
+  function isAirlineRegistered(address airline) public view returns (bool);
+
+  function isAirlineFunded(address airline) public view returns (bool);
+
+  function isFlightRegistered(bytes32 flightKey) public view returns (bool);
+
+  function isFlightLanded(bytes32 flightKey) public view returns (bool);
+
+  function flightInsuredForPassenger(bytes32 flightKey, address passenger)
+    public
+    view
+    returns (bool);
+
+  function getRegisteredAirlineCount() public view returns (uint256);
+
+  function getFundedAirlineCount() public view returns (uint256);
+
+  function getRegisteredFlightCount() public view returns (uint256);
+
+  function registerAirline(address newAirline, address registeringAirline)
+    external;
+
+  function registerFlight(
+    bytes32 flightKey,
+    uint256 timestamp,
+    address airline,
+    string memory flightNumber,
+    string memory departureLocation,
+    string memory arrivalLocation
+  ) public payable;
+
+  function processFlightStatus(
+    address airline,
+    string calldata flight,
+    uint256 timestamp,
+    uint8 statusCode
+  ) external;
+
+  function buy(
+    bytes32 flightKey,
+    address passenger,
+    uint256 amount,
+    uint256 payout
+  ) external payable;
+
+  function creditInsurees(bytes32 flightKey) internal;
+
+  function pay(address payable payoutAddress) external;
+
+  function fund(address airline, uint256 amount) external returns (bool);
+
+  function getFlightKey(
+    address airline,
+    string memory flight,
+    uint256 timestamp
+  ) internal pure returns (bytes32);
+
+  function fund() public payable;
 }
