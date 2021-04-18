@@ -101,17 +101,6 @@ contract FlightSuretyApp {
   }
 
   /**
-   * @dev Modifier that checks Flight is not registered yet
-   */
-  modifier requireFlightIsNotRegistered(bytes32 flightKey) {
-    require(
-      !flightSuretyData.isFlightRegistered(flightKey),
-      "Flight is already registered"
-    );
-    _;
-  }
-
-  /**
    * @dev Modifier that requires an Airline is registered
    */
   modifier requireAirlineIsRegistered(address airline) {
@@ -131,11 +120,50 @@ contract FlightSuretyApp {
   }
 
   /**
+- @dev Modifier that requires funding is adequate
+   */
+  modifier requireAdequateFunding(uint256 amount) {
+    require(msg.value >= amount, "Inadequate Funds");
+    _;
+  }
+
+  /**
+- @dev Modifier that returns change after airline  is funded
+   */
+  modifier refundAmount() {
+    _;
+    uint256 refund = msg.value - AIRLINE_REGISTRATION_FEE;
+    msg.sender.transfer(refund);
+  }
+
+  /**
+   * @dev Modifier that checks Flight is not registered yet
+   */
+  modifier requireFlightIsNotRegistered(bytes32 flightKey) {
+    require(
+      !flightSuretyData.isFlightRegistered(flightKey),
+      "Flight is already registered"
+    );
+    _;
+  }
+
+  /**
    * @dev Modifier that requires a Flight is registered
    */
   modifier requireFlightIsRegistered(bytes32 flightKey) {
     require(
       flightSuretyData.isFlightRegistered(flightKey),
+      "Flight is not registered"
+    );
+    _;
+  }
+
+  /**
+   * @dev Modifier that requires a Flight has not landed
+   */
+  modifier requireFlightIsNotLanded(bytes32 flightKey) {
+    require(
+      !flightSuretyData.isFlightLanded(flightKey),
       "Flight is not registered"
     );
     _;
@@ -225,10 +253,29 @@ contract FlightSuretyApp {
   }
 
   /**
+   * @dev Funds an registered airline
+   *
+   */
+  function fund()
+    external
+    payable
+    requireIsOperational
+    requireAirlineIsRegistered(msg.sender)
+    requireAirlineIsNotFunded(msg.sender)
+    requireAdequateFunding(AIRLINE_REGISTRATION_FEE)
+    returns (bool)
+  {
+    address(uint160(address(flightSuretyData))).transfer(
+      AIRLINE_REGISTRATION_FEE
+    );
+    return flightSuretyData.fund(msg.sender, AIRLINE_REGISTRATION_FEE);
+  }
+
+  /**
    * @dev Register a future flight for insuring.
    *
    */
-  function registerFlight() external pure {}
+  function registerFlight() external {}
 
   /**
    * @dev Called after oracle has updated flight status

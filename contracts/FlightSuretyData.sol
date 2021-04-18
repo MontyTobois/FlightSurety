@@ -106,6 +106,14 @@ contract FlightSuretyData {
   }
 
   /**
+   * @dev Modifier that checks if caller is authorized
+   */
+  modifier requireIsCallerAuthorized() {
+    require(authorizedContracts[msg.sender] == 1, "caller is not authorized");
+    _;
+  }
+
+  /**
    * @dev Modifier that requires an Airline is not registered yet
    */
   modifier requireAirlineIsNotRegistered(address airline) {
@@ -118,14 +126,6 @@ contract FlightSuretyData {
    */
   modifier requireAirlineIsNotFunded(address airline) {
     require(!airlines[airline].isFunded, "Airline is already funded");
-    _;
-  }
-
-  /**
-   * @dev Modifier that checks Flight is not registered yet
-   */
-  modifier requireFlightIsNotRegistered(bytes32 flightKey) {
-    require(!flights[flightKey].isRegistered, "Flight is already registered");
     _;
   }
 
@@ -146,18 +146,18 @@ contract FlightSuretyData {
   }
 
   /**
-   * @dev Modifier that checks if Flight is registered yet
+   * @dev Modifier that checks Flight is not registered yet
    */
-  modifier requireFlightIsRegistered(bytes32 flightKey) {
-    require(flights[flightKey].isRegistered, "Flight is not registered");
+  modifier requireFlightIsNotRegistered(bytes32 flightKey) {
+    require(!flights[flightKey].isRegistered, "Flight is already registered");
     _;
   }
 
   /**
-   * @dev Modifier that checks if Insurance was not credited yet
+   * @dev Modifier that checks if Flight is registered yet
    */
-  modifier requireIsCallerAuthorized() {
-    require(authorizedContracts[msg.sender] == 1, "caller is not authorized");
+  modifier requireFlightIsRegistered(bytes32 flightKey) {
+    require(flights[flightKey].isRegistered, "Flight is not registered");
     _;
   }
 
