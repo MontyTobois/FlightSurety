@@ -275,7 +275,22 @@ contract FlightSuretyApp {
    * @dev Register a future flight for insuring.
    *
    */
-  function registerFlight() external {}
+  function registerFlight(
+    uint256 timestamp,
+    string calldata flightNumber,
+    string calldata departureLocation,
+    string calldata arrivalLocation
+  ) external requireIsOperational requireAirlineIsFunded(msg.sender) {
+    bytes32 flightKey = getFlightKey(msg.sender, flightNumber, timestamp);
+    flightSuretyData.registerFlight(
+      flightKey,
+      timestamp,
+      msg.sender,
+      flightNumber,
+      departureLocation,
+      arrivalLocation
+    );
+  }
 
   /**
    * @dev Called after oracle has updated flight status
@@ -286,14 +301,26 @@ contract FlightSuretyApp {
     string memory flight,
     uint256 timestamp,
     uint8 statusCode
-  ) internal pure {}
+  ) internal requireIsOperational {
+    flightSuretyData.processFlightStatus(
+      airline,
+      flight,
+      timestamp,
+      statusCode
+    );
+  }
 
   // Generate a request for oracles to fetch flight information
   function fetchFlightStatus(
     address airline,
     string calldata flight,
-    uint256 timestamp
-  ) external {
+    uint256 timestamp,
+    bytes32 flightKey
+  )
+    external
+    requireFlightIsRegistered(flightKey)
+    requireFlightIsNotLanded(flightKey)
+  {
     uint8 index = getRandomIndex(msg.sender);
 
     // Generate a unique key for storing the request
