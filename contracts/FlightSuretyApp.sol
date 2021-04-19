@@ -332,7 +332,10 @@ contract FlightSuretyApp {
     );
   }
 
-  // Generate a request for oracles to fetch flight information
+  /**
+   * @dev Generate a request for oracles to fetch flight information
+   *
+   */
   function fetchFlightStatus(
     address airline,
     string calldata flight,
@@ -351,6 +354,31 @@ contract FlightSuretyApp {
     oracleResponses[key] = ResponseInfo({requester: msg.sender, isOpen: true});
 
     emit OracleRequest(index, airline, flight, timestamp);
+  }
+
+  /**
+   * @dev Buys insurance for a flight
+   *
+   */
+  function buy(bytes32 flightKey)
+    external
+    payable
+    requireIsOperational
+    requireFlightIsRegistered(flightKey)
+    requireFlightIsNotLanded(flightKey)
+    requireFlightIsNotInsured(flightKey, msg.sender)
+    requireLowerInsuranceValue()
+  {
+    address(uint160(address(flightSuretyData))).transfer(msg.value);
+    flightSuretyData.buy(flightKey, msg.sender, msg.value, INSURANCE_PAYOUT);
+  }
+
+  /**
+   * @dev Transfers eligible payout funds to insuree
+   *
+   */
+  function pay() public {
+    flightSuretyData.pay(msg.sender);
   }
 
   /********************************************************************************************/
@@ -413,7 +441,7 @@ contract FlightSuretyApp {
   );
 
   // Register an oracle with the contract
-  function registerOracle() external payable {
+  function registerOracle() external payable requireIsOperational {
     // Require registration fee
     require(msg.value >= REGISTRATION_FEE, "Registration fee is required");
 
@@ -422,7 +450,12 @@ contract FlightSuretyApp {
     oracles[msg.sender] = Oracle({isRegistered: true, indexes: indexes});
   }
 
-  function getMyIndexes() external view returns (uint8[3] memory) {
+  function getMyIndexes()
+    external
+    view
+    requireIsOperational
+    returns (uint8[3] memory)
+  {
     require(oracles[msg.sender].isRegistered, "Not registered as an oracle");
 
     return oracles[msg.sender].indexes;
@@ -438,7 +471,7 @@ contract FlightSuretyApp {
     string calldata flight,
     uint256 timestamp,
     uint8 statusCode
-  ) external {
+  ) external requireIsOperational {
     require(
       (oracles[msg.sender].indexes[0] == index) ||
         (oracles[msg.sender].indexes[1] == index) ||
