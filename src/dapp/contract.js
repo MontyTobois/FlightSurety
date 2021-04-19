@@ -48,6 +48,14 @@ export default class Contract {
       .call({ from: self.owner }, callback);
   }
 
+  setOperatingStatus(mode, callback) {
+    let self = this;
+    self.flightSuretyApp.methods
+      .setOperatingStatus(mode)
+      .send({ from: self.owner })
+      .then(console.log);
+  }
+
   fetchFlightStatus(flight, callback) {
     let self = this;
     let payload = {
@@ -60,5 +68,41 @@ export default class Contract {
       .send({ from: self.owner }, (error, result) => {
         callback(error, payload);
       });
+  }
+
+  registerAirline(airline, callback) {
+    let self = this;
+    self.flightSuretyApp.methods
+      .registerAirline(airline)
+      .send({ from: this.account })
+      .then(console.log);
+  }
+
+  fund(airline, callback) {
+    let self = this;
+    self.flightSuretyApp.methods
+      .fund()
+      .send({
+        from: this.account,
+        value: this.web3.utils.toWei(amount, "ether")
+      })
+      .then(console.log);
+  }
+
+  registerFlight(flightNumber, departureLocation, arrivalLocation, callback) {
+    let self = this;
+    let timestamp = Math.floor(date.now() / 1000);
+    self.flightSuretyApp.methods
+      .registerFlight(
+        flightNumber,
+        departureLocation,
+        arrivalLocation,
+        timestamp
+      )
+      .send({
+        from: this.account,
+        gas: 999999999
+      })
+      .then(console.log);
   }
 }
