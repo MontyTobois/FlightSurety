@@ -169,6 +169,28 @@ contract FlightSuretyApp {
     _;
   }
 
+  /**
+   * @dev Modifier that requires a Flight is not insured
+   */
+  modifier requireFlightIsNotInsured(bytes32 flightKey, address passenger) {
+    require(
+      !flightSuretyData.flightInsuredForPassenger(flightKey, passenger),
+      "Flight is insured already"
+    );
+    _;
+  }
+
+  /**
+   * @dev Modifier that requires the value spent on insurance is not exceeded
+   */
+  modifier requireLowerInsuranceValue() {
+    require(
+      msg.value <= MAX_INSURANCE_VALUE,
+      "Value is higher than max insurance plan"
+    );
+    _;
+  }
+
   /********************************************************************************************/
   /*                                       CONSTRUCTOR                                        */
   /********************************************************************************************/
