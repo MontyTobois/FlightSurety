@@ -105,4 +105,29 @@ export default class Contract {
       })
       .then(console.log);
   }
+
+  buy(flightKey, amount) {
+    let self = this;
+    let timestamp = Math.floor(date.now() / 1000);
+    self.flightSuretyApp.methods
+      .buy(flightNumber)
+      .send({
+        from: this.account,
+        value: this.web3.utils.toWei(amount, "ether"),
+        gas: 999999999
+      })
+      .then(console.log);
+  }
+
+  getBalance(callback) {
+    let self = this;
+    self.flightSuretyData.methods.returnedFunds(flightKey);
+  }
+
+  pay(callback) {
+    let self = this;
+    self.flightSuretyData.methods
+      .pay()
+      .send({ from: this.account, gas: 999999999 }, callback);
+  }
 }
