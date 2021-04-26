@@ -440,6 +440,8 @@ contract FlightSuretyApp {
     uint256 timestamp
   );
 
+  event OracleRegistered(address oracle);
+
   // Register an oracle with the contract
   function registerOracle() external payable requireIsOperational {
     // Require registration fee
@@ -448,6 +450,8 @@ contract FlightSuretyApp {
     uint8[3] memory indexes = generateIndexes(msg.sender);
 
     oracles[msg.sender] = Oracle({isRegistered: true, indexes: indexes});
+
+    emit OracleRegistered(msg.sender);
   }
 
   function getMyIndexes()
@@ -599,7 +603,7 @@ contract FlightSuretyData {
     uint256 payout
   ) external payable;
 
-  function creditInsurees(bytes32 flightKey) internal;
+  function creditInsuree(bytes32 flightKey) internal;
 
   function pay(address payable payoutAddress) external;
 
