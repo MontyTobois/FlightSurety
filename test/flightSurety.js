@@ -1,13 +1,17 @@
 var Test = require("../config/testConfig.js");
+var Web3 = require("web3");
 var BigNumber = require("bignumber.js");
+// var fs = require("fs-extra");
 
 contract("Flight Surety Tests", async (accounts) => {
+  var web3;
   var config;
   before("setup contract", async () => {
     config = await Test.Config(accounts);
-    await config.flightSuretyData.authorizeCaller(
-      config.flightSuretyApp.address
-    );
+    web3 = new Web3(new Web3.providers.HttpProvider(config.url));
+    // await config.flightSuretyData.authorizeCaller(
+    //   config.flightSuretyApp.address
+    // );
   });
 
   /****************************************************************************************/
@@ -73,7 +77,9 @@ contract("Flight Surety Tests", async (accounts) => {
         from: config.firstAirline
       });
     } catch (e) {}
-    let result = await config.flightSuretyData.isAirline.call(newAirline);
+    let result = await config.flightSuretyData.isAirlineRegistered.call(
+      newAirline
+    );
 
     // ASSERT
     assert.equal(
@@ -82,4 +88,80 @@ contract("Flight Surety Tests", async (accounts) => {
       "Airline should not be able to register another airline if it hasn't provided funding"
     );
   });
+
+  it("(airline) cannot register a flight using registerFlight if not funded", async () => {
+    // ARRANGE
+    let flightName = "Flight Run";
+    let departureTime = Date.now();
+    let destination = "Egypt, Africa";
+    let flightKey = "";
+
+    //  ACT
+    try {
+      flightKey = await config.flightSuretyApp.registerFlight(
+        flightName,
+        departureTime,
+        destination,
+        { from: config.firstAirline }
+      );
+    } catch (error) {
+      let result = await config.flightSuretyData.isFlightRegistered.call(
+        web3.utils.toHex(flightKey)
+      );
+
+      // ASSERT
+      assert.equal(
+        result,
+        false,
+        "Airline should not ne able to register another airline if there is not sufficent funding"
+      );
+    }
+  });
+
+  it("(airline) can fund itself using fund()", async () => {
+    // ARRANGE
+    let amount = web3.utils.toWei("10", "ether");
+    let result = true;
+
+    //ACT
+    try {
+      result = await config.flightSuretyApp.fund.call({
+        from: config.firstAirline,
+        value: amount
+      });
+    } catch (error) {
+      // console.log(error);
+    }
+
+    // ASSERT
+    assert.equal(result, true, "Air has insufficent funds");
+  });
+
+  it("(airline) can register another airline using reigsterAirline()", async () => {
+    // ARRANGE
+    let newAirline = accounts[2];
+    let result = true;
+
+    // ACT
+    try {
+      await config.flightSuretyApp.fund({
+        from: config.firstAirline,
+        value: web3.utils.toWei("10", "ether")
+      });
+      await config.flightSuretyApp.registerAirline(newAirline, {
+        from: config.firstAirline
+      });
+    } catch (error) {
+      // console.log(error);
+    }
+    result = await config.flightSuretyData.isAirlineRegistered.call(newAirline);
+    // ASSERT
+    assert.equal(
+      result,
+      false,
+      "Airline should register another airline once sufficent fund have been applied"
+    );
+  });
+
+  // it("('flight') will credit passenger using the ");
 });

@@ -39,13 +39,17 @@ contract("Oracles", async (accounts) => {
     // ARRANGE
     let flight = "ND1309"; // Course number
     let timestamp = Math.floor(Date.now() / 1000);
-
     // Submit a request for oracles to get status information for a flight
-    await config.flightSuretyApp.fetchFlightStatus(
-      config.firstAirline,
-      flight,
-      timestamp
-    );
+    try {
+      await config.flightSuretyApp.fetchFlightStatus(
+        config.firstAirline,
+        flight,
+        timestamp,
+        flightKey
+      );
+    } catch (error) {
+      // console.log(error);
+    }
     // ACT
 
     // Since the Index assigned to each test account is opaque by design
@@ -70,13 +74,13 @@ contract("Oracles", async (accounts) => {
           );
         } catch (e) {
           // Enable this when debugging
-          console.log(
-            "\nError",
-            idx,
-            oracleIndexes[idx].toNumber(),
-            flight,
-            timestamp
-          );
+          // console.log(
+          //   "\nError",
+          //   idx,
+          //   oracleIndexes[idx].toNumber(),
+          //   flight,
+          //   timestamp
+          // );
         }
       }
     }

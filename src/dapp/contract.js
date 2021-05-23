@@ -57,10 +57,10 @@ export default class Contract {
    .then(console.log);
  }
 
- fetchFlightStatus(airline, flight, timestamp, callback) {
+ fetchFlightStatus(airline, flight, timestamp, flightKey, callback) {
   let self = this;
   self.flightSuretyApp.methods
-   .fetchFlightStatus(airline, flight, timestamp)
+   .fetchFlightStatus(airline, flight, timestamp, flightKey)
    .send({ from: self.owner }, (error, result) => {
     callback(error, result);
    });
@@ -115,10 +115,10 @@ export default class Contract {
    .then(console.log);
  }
 
- getBalance(callback) {
-  let self = this;
-  self.flightSuretyData.methods.returnedFunds(flightKey);
- }
+ //  getBalance(callback) {
+ //   let self = this;
+ //   self.flightSuretyData.methods.returnedFunds(flightKey);
+ //  }
 
  pay(callback) {
   let self = this;

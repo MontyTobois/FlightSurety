@@ -194,8 +194,10 @@ contract FlightSuretyData {
     public
     view
     requireIsOperational
-    requireIsCallerAuthorized
-    returns (bool)
+    returns (
+      // requireIsCallerAuthorized
+      bool
+    )
   {
     return airlines[airline].isRegistered;
   }
